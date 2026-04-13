@@ -3,17 +3,74 @@ from __future__ import annotations
 import datetime as dt
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_admin
 from app.db.session import get_db
 from app.models.admin_models import AdminOperationRunItemORM, AdminOperationRunORM, TelemetryEventORM
 from app.models.auth_models import AdminUserORM
+from app.models.business_models import CompassReportORM, PolicyORM
+from app.models.policy_review_models import PolicyReviewTaskORM
 from app.services.admin_operation_service import consume_one_pending_run
 
 
 router = APIRouter(prefix="/admin-ops", tags=["admin-ops"])
+
+
+@router.get("/dashboard-summary")
+def dashboard_summary(db: Session = Depends(get_db), admin: AdminUserORM = Depends(get_current_admin)):
+    _ = admin
+    policy_count = db.scalar(select(func.count()).select_from(PolicyORM)) or 0
+    pending_review = (
+        db.scalar(
+            select(func.count())
+            .select_from(PolicyReviewTaskORM)
+            .where(PolicyReviewTaskORM.review_status == "pending")
+        )
+        or 0
+    )
+
+    latest_ac = db.scalar(
+        select(AdminOperationRunORM)
+        .where(AdminOperationRunORM.operation_type == "auto_crawler_run")
+        .order_by(desc(AdminOperationRunORM.id))
+        .limit(1)
+    )
+    last_auto = None
+    last_queued = 0
+    if latest_ac:
+        prog = (latest_ac.result_json or {}).get("progress") or {}
+        last_queued = int(prog.get("review_task_count") or 0)
+        ts = latest_ac.updated_at or latest_ac.created_at
+        last_auto = {
+            "run_at": ts.isoformat() if ts else None,
+            "status": latest_ac.status,
+            "crawled_count": int(prog.get("candidates_count") or 0),
+            "filtered_count": int(prog.get("stored_count") or 0),
+            "queued_count": last_queued,
+            "summary_message": latest_ac.summary_message or "",
+        }
+
+    latest_report = db.scalar(
+        select(CompassReportORM).order_by(desc(CompassReportORM.published_at), desc(CompassReportORM.id)).limit(1)
+    )
+    compass_block = None
+    if latest_report:
+        pub = latest_report.published_at
+        compass_block = {
+            "id": latest_report.id,
+            "title": latest_report.title,
+            "published_at": pub.isoformat() if pub else None,
+        }
+
+    return {
+        "policy_count": int(policy_count),
+        "pending_review_count": int(pending_review),
+        "last_queued_count": last_queued,
+        "last_auto_crawler_run": last_auto,
+        "latest_compass_report": compass_block,
+    }
 
 
 @router.get("/runs")

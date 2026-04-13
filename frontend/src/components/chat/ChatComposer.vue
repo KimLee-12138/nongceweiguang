@@ -367,4 +367,19 @@ function onEnter(e) {
     justify-content: flex-end;
   }
 }
+
+:deep(.el-textarea__inner) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 91, 61, 0.15) transparent;
+}
+
+:deep(.el-textarea__inner::-webkit-scrollbar) { width: 5px; }
+:deep(.el-textarea__inner::-webkit-scrollbar-track) { background: transparent; }
+:deep(.el-textarea__inner::-webkit-scrollbar-thumb) {
+  background: rgba(29, 91, 61, 0.15);
+  border-radius: 999px;
+}
+:deep(.el-textarea__inner::-webkit-scrollbar-thumb:hover) {
+  background: rgba(29, 91, 61, 0.28);
+}
 </style>

@@ -14,6 +14,7 @@ from app.db.session import get_db
 from app.models.auth_models import AdminUserORM
 from app.models.business_models import CompassGlossaryORM, CompassReportORM
 from app.services.compass_service import (
+    build_policy_briefing,
     build_compass_signals,
     create_glossary_item,
     delete_glossary_item,
@@ -75,6 +76,15 @@ def theme_trends(months: Annotated[int, Query(ge=3, le=24)] = 6, db: Session = D
         'audience_distribution': signals['audience_distribution'],
         'region_distribution': signals['region_distribution'],
     }
+
+
+@router.get('/briefing')
+def briefing(
+    months: Annotated[int, Query(ge=3, le=24)] = 6,
+    policy_id: Annotated[int | None, Query()] = None,
+    db: Session = Depends(get_db),
+):
+    return build_policy_briefing(db, months=months, policy_id=policy_id)
 
 
 @router.get('/reports')

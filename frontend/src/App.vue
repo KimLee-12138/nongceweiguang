@@ -24,6 +24,9 @@ const hideShellTopbar = computed(() => {
     p === '/register' ||
     p === '/onboarding/profile' ||
     p === '/chat' ||
+    p === '/insights' ||
+    p === '/compass' ||
+    p === '/policy-compass' ||
     p.startsWith('/admin')
   )
 })

@@ -226,6 +226,7 @@ def compile_policy_text(*, raw_text: str, title: str | None = None, source: str 
     prompt = f"""
 你要把一段中文涉农政策原文编译成可供规则匹配引擎直接执行的详细 JSON。
 输出字段：
+- corrected_title: 根据原文内容确定的准确政策标题。如果提供的标题是机构名、栏目名或明显不是政策标题，必须从原文中提取正确标题；如果提供的标题已经正确，原样返回即可
 - summary: 不超过 180 字的中文摘要
 - condition_tree: 详细条件树，根节点固定为 group，必须包含 schema_version、compile_metadata、applicable_subjects
 - category: 政策分类短词
@@ -276,7 +277,9 @@ condition_tree 规则：
     tree = result.get('condition_tree')
     if not isinstance(tree, dict) or tree.get('id') != 'root':
         raise ModelProviderError('模型未返回合法的 condition_tree')
+    corrected_title = str(result.get('corrected_title') or '').strip()
     return {
+        'corrected_title': corrected_title,
         'summary': str(result.get('summary') or '').strip(),
         'condition_tree': tree,
         'category': str(result.get('category') or '').strip(),

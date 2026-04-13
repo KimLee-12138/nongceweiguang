@@ -14,6 +14,9 @@ export const compassApi = {
   getOverview(params = {}) {
     return api.get(`/compass/overview${toQuery(params)}`)
   },
+  getBriefing(params = {}) {
+    return api.get(`/compass/briefing${toQuery(params)}`)
+  },
   getThemeTrends(params = {}) {
     return api.get(`/compass/theme-trends${toQuery(params)}`)
   },

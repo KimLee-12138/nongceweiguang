@@ -191,6 +191,18 @@ function formatConversationTime(item) {
   flex: 1;
   overflow-y: auto;
   padding: 1rem 1rem 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 91, 61, 0.15) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar { width: 5px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(29, 91, 61, 0.15);
+  border-radius: 999px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 91, 61, 0.28);
 }
 
 .sidebar-section + .sidebar-section {

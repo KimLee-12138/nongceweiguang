@@ -84,6 +84,64 @@ def test_build_compass_signals_aggregates_real_dimensions():
         assert any(item['name'] == '湖北省' for item in payload['region_distribution'])
 
 
+def test_briefing_contains_forecast_and_term_explanations():
+    engine = create_engine('sqlite:///:memory:', future=True)
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        db.add(
+            CompassGlossaryORM(
+                term='高标准农田',
+                category='政策主题',
+                aliases_json=['农田建设'],
+                weight=4,
+                enabled=True,
+                description='指向耕地质量提升和基础设施补短板的政策方向。',
+            )
+        )
+        policy = PolicyORM(
+            title='高标准农田建设扶持政策',
+            source='湖北省农业农村厅',
+            summary='支持家庭农场开展高标准农田建设。',
+            file_type='gfxwj',
+            validity_status='有效',
+            condition_tree={
+                'schema_version': '2.0',
+                'id': 'root',
+                'type': 'group',
+                'logic': 'and',
+                'must': True,
+                'applicable_subjects': ['家庭农场'],
+                'children': [],
+            },
+        )
+        db.add(policy)
+        db.add(
+            HubeiPolicyRawORM(
+                title='湖北省高标准农田建设项目通知',
+                issuer='湖北省农业农村厅',
+                publish_date=dt.date(2026, 4, 1),
+                topic_category='农田建设',
+                file_category='通知',
+                file_type='gfxwj',
+                validity_status='有效',
+                page_url='https://example.com/raw/briefing-1',
+                attachment_urls=[],
+                full_text='推进高标准农田建设，提高耕地质量。',
+            )
+        )
+        db.commit()
+        db.refresh(policy)
+
+        payload = compass_routes.briefing(months=6, policy_id=policy.id, db=db)
+
+        assert payload['province'] == '湖北省'
+        assert payload['forecast_cards']
+        assert any(item['term'] == '高标准农田' for item in payload['focus_terms'])
+        assert payload['selected_policy']['id'] == policy.id
+        assert payload['selected_policy']['terms']
+
+
 def test_glossary_routes_support_crud():
     engine = create_engine('sqlite:///:memory:', future=True)
     Base.metadata.create_all(engine)

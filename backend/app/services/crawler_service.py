@@ -453,20 +453,72 @@ def _normalize_link(href: str, base_url: str) -> str:
     return full
 
 
+def _is_likely_org_name(text: str) -> bool:
+    """Check if text looks like an organization name rather than a policy title."""
+    text = text.strip()
+    if not text or len(text) < 3:
+        return True
+    org_suffixes = ('厅', '局', '委', '部', '办', '院', '中心', '会', '所', '站', '处', '司', '署')
+    if text.endswith(org_suffixes):
+        if len(text) <= 20 and not any(kw in text for kw in ('关于', '通知', '意见', '办法', '规定', '方案', '条例', '公告', '公示', '通报')):
+            return True
+    return False
+
+
+def _pick_best_title(candidates: list[str]) -> str:
+    """Pick the best policy title from candidates, preferring longer, non-org-name strings."""
+    valid = [c for c in candidates if c and not _is_likely_org_name(c)]
+    if not valid:
+        valid = [c for c in candidates if c]
+    if not valid:
+        return ''
+    return max(valid, key=len)
+
+
+def _extract_title_candidates(page_html: str, body_text: str) -> list[str]:
+    """Extract multiple title candidates from various HTML sources."""
+    candidates: list[str] = []
+
+    h1 = _clean_text(_first_match([r'<h1[^>]*>(.*?)</h1>'], page_html))
+    if h1:
+        candidates.append(h1)
+
+    og_title = _clean_text(_first_match([r'<meta[^>]+property=[\'"]og:title[\'"][^>]+content=[\'"]([^\'"]+)[\'"]'], page_html))
+    if og_title:
+        candidates.append(og_title)
+
+    raw_title = _clean_text(_first_match([r'<title[^>]*>(.*?)</title>'], page_html))
+    if raw_title:
+        cleaned = re.split(r'\s*[-_|—]\s*', raw_title)[0].strip()
+        if cleaned:
+            candidates.append(cleaned)
+        if raw_title != cleaned:
+            candidates.append(raw_title)
+
+    for pattern in (r'class=[\'"][^\'\"]*article[_-]?title[^\'\"]*[\'"]', r'class=[\'"][^\'\"]*detail[_-]?title[^\'\"]*[\'"]'):
+        match = re.search(rf'<[^>]+{pattern}[^>]*>(.*?)</[^>]+>', page_html, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            text = _clean_text(match.group(1))
+            if text:
+                candidates.append(text)
+
+    h2 = _clean_text(_first_match([r'<h2[^>]*>(.*?)</h2>'], page_html))
+    if h2 and len(h2) > 8:
+        candidates.append(h2)
+
+    if not candidates:
+        candidates.append(body_text[:60])
+
+    return candidates
+
+
 def _parse_article_page(page_html: str, *, link: str, source: CrawlerSource) -> dict[str, Any]:
     body_text = _page_text(page_html)
     if len(body_text) < 120:
         raise CrawlerError('页面正文过短')
 
-    title = _clean_text(
-        _first_match(
-            [
-                r'<h1[^>]*>(.*?)</h1>',
-                r'<title[^>]*>(.*?)</title>',
-            ],
-            page_html,
-        )
-    ) or body_text[:60]
+    title_candidates = _extract_title_candidates(page_html, body_text)
+    title = _pick_best_title(title_candidates) or body_text[:60]
     meta_text = _clean_text(page_html[:12000])
 
     file_type = _determine_file_type(link, page_html, source)

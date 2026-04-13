@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -15,7 +15,7 @@ let observer = null
 const hasUser = computed(() => !!userMe.value?.authenticated)
 const hasAdmin = computed(() => !!adminMe.value?.authenticated)
 
-const chatEntryLabel = computed(() => (hasUser.value ? '进入工作台' : '开始专属匹配'))
+const chatEntryLabel = computed(() => (hasUser.value ? '进入智能工作台' : '开启专属匹配'))
 const consoleEntryPath = computed(() => (hasAdmin.value ? '/admin' : '/admin/login'))
 
 function go(path) {
@@ -23,7 +23,7 @@ function go(path) {
 }
 
 async function syncAuthState({ force = false } = {}) {
-  // force 预留；当前接口无缓存层，直接读 /me
+  // force 预留；当前接口无缓存层，直接请求 /me
   void force
   try {
     userMe.value = await getUserMe()
@@ -109,8 +109,9 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="nav-menu">
-          <a class="nav-link" @click="go('/insights')">洞察</a>
-          <a class="nav-link" @click="go(consoleEntryPath)">控制台</a>
+          <a class="nav-link" @click="go('/insights')">政策洞察</a>
+          <a class="nav-link" @click="go('/policy-compass')">风向大屏</a>
+          <a class="nav-link" @click="go(consoleEntryPath)">管理中枢</a>
 
           <div class="nav-divider"></div>
 
@@ -146,7 +147,7 @@ onBeforeUnmount(() => {
           </p>
           <div class="hero-actions cinematic-reveal delay-3">
             <button class="btn-primary-dark" @click="go('/chat')">{{ chatEntryLabel }}</button>
-            <button class="btn-outline-dark" @click="go('/insights')">探索洞察</button>
+            <button class="btn-outline-dark" @click="go('/policy-compass')">展开风向大屏</button>
           </div>
         </div>
       </section>
@@ -155,7 +156,7 @@ onBeforeUnmount(() => {
         <div class="manifesto-container cinematic-reveal">
           <h2 class="manifesto-text">
             不要去海里捞针。<br />
-            <span>让对的政策，来找你。</span>
+            <span>让真正适合你的政策，主动来找你。</span>
           </h2>
         </div>
       </section>
@@ -163,7 +164,7 @@ onBeforeUnmount(() => {
       <section class="section-feature feature-left">
         <div class="feature-container">
           <div class="feature-text cinematic-reveal">
-            <span class="feature-eyebrow">精准定帧</span>
+            <span class="feature-eyebrow">精准定锚</span>
             <h2 class="feature-title">你的农场，<br />你的专属引擎。</h2>
             <p class="feature-desc">
               一次性挂载经营面积、主体类型与认证条件。系统以此为锚点，自动过滤无关噪音，直接呈现与你有关的申报机会与门槛缺口。
@@ -192,7 +193,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="feature-text cinematic-reveal delay-2">
             <span class="feature-eyebrow">化繁为简</span>
-            <h2 class="feature-title">八股公文？<br />一秒说人话。</h2>
+            <h2 class="feature-title">复杂公文，<br />一秒说人话。</h2>
             <p class="feature-desc">
               用结构化规则树把政策拆解成可计算条件，再用对话把结论讲清楚：你是否满足、缺什么、怎么补、有哪些风险点。
             </p>
@@ -205,13 +206,13 @@ onBeforeUnmount(() => {
           <div class="feature-text cinematic-reveal">
             <span class="feature-eyebrow">谋定后动</span>
             <h2 class="feature-title">知道怎么做，<br />比知道能报什么更重要。</h2>
-            <p class="feature-desc">不止“能不能报”。系统把门槛缺口转成清晰行动清单，按优先级给出补齐路径与注意事项。</p>
+            <p class="feature-desc">不止是“能不能报”。系统会把门槛缺口转成清晰行动清单，按优先级给出补齐路径与注意事项。</p>
           </div>
           <div class="feature-visual cinematic-reveal delay-2">
             <div class="visual-artbox artbox-3">
               <div class="action-steps">
                 <div class="step-item"><span class="step-dot"></span> 补齐必要认证材料</div>
-                <div class="step-item"><span class="step-dot"></span> 准备关键佐证文档</div>
+                <div class="step-item"><span class="step-dot"></span> 准备关键佐证文件</div>
                 <div class="step-item active"><span class="step-dot"></span> 发起申报/备案流程</div>
               </div>
             </div>
@@ -225,7 +226,7 @@ onBeforeUnmount(() => {
           <div class="cta-actions">
             <button class="btn-primary-dark large" @click="go('/chat')">进入智能工作台</button>
             <button v-if="!hasUser" class="btn-outline-dark large" @click="go('/register')">免费创建账号</button>
-            <button class="btn-ghost-dark large" @click="go('/admin')">进入管理控制台</button>
+            <button class="btn-ghost-dark large" @click="go('/admin')">进入管理中枢</button>
           </div>
         </div>
       </section>
@@ -237,8 +238,8 @@ onBeforeUnmount(() => {
           <p>© 2026 农策微光 (Agricultural Policy Intelligence). All rights reserved.</p>
         </div>
         <div class="footer-right">
-          <span class="footer-link" @click="go('/insights')">洞察</span>
-          <span class="footer-link" @click="go('/compass')">风向标</span>
+          <span class="footer-link" @click="go('/insights')">政策洞察</span>
+          <span class="footer-link" @click="go('/policy-compass')">风向大屏</span>
         </div>
       </div>
     </footer>

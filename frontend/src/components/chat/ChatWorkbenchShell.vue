@@ -59,7 +59,9 @@
       </div>
     </el-main>
 
-    <aside v-if="!isCompactLayout" class="terminal-sidebar terminal-sidebar--right terminal-sidebar--empty" aria-hidden="true" />
+    <aside v-if="!isCompactLayout" class="terminal-sidebar terminal-sidebar--right">
+      <slot name="right-panel" />
+    </aside>
   </el-container>
 
   <el-drawer
@@ -154,10 +156,6 @@ defineEmits([
 .terminal-sidebar--right {
   flex: 0 0 clamp(248px, 21vw, 288px);
   border-left: 1px solid rgba(18, 24, 22, 0.08);
-}
-
-.terminal-sidebar--empty {
-  pointer-events: none;
 }
 
 .terminal-main {

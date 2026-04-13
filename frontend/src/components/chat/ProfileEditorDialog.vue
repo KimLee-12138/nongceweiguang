@@ -231,6 +231,18 @@ function goOnboarding() {
   max-height: min(72vh, 780px);
   overflow: auto;
   padding-right: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 91, 61, 0.15) transparent;
+}
+
+.editor-shell::-webkit-scrollbar { width: 5px; }
+.editor-shell::-webkit-scrollbar-track { background: transparent; }
+.editor-shell::-webkit-scrollbar-thumb {
+  background: rgba(29, 91, 61, 0.15);
+  border-radius: 999px;
+}
+.editor-shell::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 91, 61, 0.28);
 }
 
 .editor-toolbar {

@@ -36,6 +36,11 @@ function renderAssistantMarkdown(content) {
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
 }
 
+function eligibilityLabel(level) {
+  const map = { high: '高', medium: '中', low: '低', unknown: '未知' }
+  return map[level] || level || '—'
+}
+
 function scrollToBottom() {
   if (chatListRef.value) {
     chatListRef.value.scrollTop = chatListRef.value.scrollHeight
@@ -100,6 +105,62 @@ defineExpose({ scrollToBottom })
               <div class="user-query">{{ msg.content }}</div>
             </template>
             <template v-else>
+              <div v-if="msg.policyReport" class="side-card side-card--policy">
+                <div class="side-card__title">政策与匹配摘要</div>
+                <div v-if="msg.policyReport.title" class="side-card__line">
+                  <strong>{{ msg.policyReport.title }}</strong>
+                </div>
+                <template v-if="msg.policyReport.match_summary">
+                  <div class="side-card__meta">
+                    <span
+                      >匹配度
+                      {{
+                        typeof msg.policyReport.match_summary.match_score === 'number'
+                          ? `${Math.round(msg.policyReport.match_summary.match_score * 100)}%`
+                          : '—'
+                      }}</span
+                    >
+                    <span v-if="msg.policyReport.match_summary.fully_matched" class="tag tag--ok">已满足必要项</span>
+                    <span v-else class="tag tag--warn">待补齐</span>
+                  </div>
+                </template>
+              </div>
+
+              <div v-if="msg.interpretationReport" class="side-card side-card--interp">
+                <div class="side-card__title">解读要点</div>
+                <div v-if="msg.interpretationReport.eligibility_level" class="side-card__meta">
+                  适配度：<strong>{{ eligibilityLabel(msg.interpretationReport.eligibility_level) }}</strong>
+                  <span v-if="msg.interpretationReport.provider" class="side-card__provider"
+                    >· {{ msg.interpretationReport.provider }}</span
+                  >
+                </div>
+                <ul v-if="msg.interpretationReport.key_points?.length" class="side-card__list">
+                  <li v-for="(pt, j) in msg.interpretationReport.key_points" :key="'kp' + j">{{ pt }}</li>
+                </ul>
+                <ul v-if="msg.interpretationReport.next_steps?.length" class="side-card__list side-card__list--muted">
+                  <li v-for="(st, j) in msg.interpretationReport.next_steps" :key="'ns' + j">{{ st }}</li>
+                </ul>
+                <div v-if="msg.interpretationReport.error" class="side-card__error">
+                  {{ msg.interpretationReport.error }}
+                </div>
+              </div>
+
+              <div v-if="msg.agriQaReport" class="side-card side-card--agri">
+                <div class="side-card__title">农业政策问答</div>
+                <div v-if="msg.agriQaReport.provider" class="side-card__meta">
+                  提供方：<strong>{{ msg.agriQaReport.provider }}</strong>
+                </div>
+                <ul v-if="msg.agriQaReport.key_points?.length" class="side-card__list">
+                  <li v-for="(pt, j) in msg.agriQaReport.key_points" :key="'aq' + j">{{ pt }}</li>
+                </ul>
+                <ul v-if="msg.agriQaReport.followups?.length" class="side-card__list side-card__list--muted">
+                  <li v-for="(fu, j) in msg.agriQaReport.followups" :key="'fu' + j">{{ fu }}</li>
+                </ul>
+                <div v-if="msg.agriQaReport.error" class="side-card__error">
+                  {{ msg.agriQaReport.error }}
+                </div>
+              </div>
+
               <div class="assistant-text assistant-rich" v-html="renderAssistantMarkdown(msg.content)" />
               <span v-if="streaming && i === messages.length - 1" class="terminal-cursor" />
             </template>
@@ -120,6 +181,18 @@ defineExpose({ scrollToBottom })
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.96)),
     #fff;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(29, 91, 61, 0.15) transparent;
+}
+
+.stream-container::-webkit-scrollbar { width: 5px; }
+.stream-container::-webkit-scrollbar-track { background: transparent; }
+.stream-container::-webkit-scrollbar-thumb {
+  background: rgba(29, 91, 61, 0.15);
+  border-radius: 999px;
+}
+.stream-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 91, 61, 0.28);
 }
 
 .empty-terminal {
@@ -354,6 +427,90 @@ defineExpose({ scrollToBottom })
   color: #1d5b3d;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.side-card {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(17, 20, 18, 0.08);
+  background: rgba(29, 91, 61, 0.06);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.side-card--interp {
+  background: rgba(23, 26, 24, 0.04);
+}
+
+.side-card--agri {
+  background: rgba(45, 90, 120, 0.07);
+}
+
+.side-card__title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(17, 20, 18, 0.45);
+  margin-bottom: 0.45rem;
+}
+
+.side-card__line {
+  margin-bottom: 0.35rem;
+  color: #111412;
+}
+
+.side-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  color: rgba(17, 20, 18, 0.72);
+  margin-bottom: 0.35rem;
+}
+
+.side-card__provider {
+  font-size: 0.82rem;
+  color: rgba(17, 20, 18, 0.5);
+}
+
+.side-card__list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.side-card__list--muted {
+  color: rgba(17, 20, 18, 0.62);
+  font-size: 0.86rem;
+}
+
+.side-card__error {
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.45rem;
+  background: rgba(180, 60, 50, 0.1);
+  color: #7a2a22;
+  font-size: 0.84rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.tag--ok {
+  background: rgba(29, 91, 61, 0.15);
+  color: #1d5b3d;
+}
+
+.tag--warn {
+  background: rgba(180, 120, 40, 0.15);
+  color: #7a5a12;
 }
 
 .terminal-cursor {

@@ -5,10 +5,11 @@
         <div class="page-title-group">
           <h3 class="page-title">今日概览</h3>
           <p class="page-subtitle">
-            汇总政策库规模、待审核任务、自动爬取最近结果和统一任务中心入口。（当前为占位数据）
+            数据来自后端实时汇总（结构化政策数、待审核队列、最近一次自动爬取作业、风向标周报）。
           </p>
         </div>
         <div class="page-actions">
+          <el-button plain :loading="summaryLoading" @click="loadDashboard">刷新数据</el-button>
           <el-button plain @click="router.push('/admin/tasks')">任务中心</el-button>
           <el-button plain @click="router.push('/admin/policies/import')">手动导入</el-button>
           <el-button type="primary" @click="router.push('/admin/policies/new')">新增政策</el-button>
@@ -110,13 +111,16 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+
+import { api } from '../../api/client'
 
 const router = useRouter()
 
 const compassGenerating = ref(false)
+const summaryLoading = ref(false)
 
 const overview = reactive({
   totalPolicies: 0,
@@ -135,20 +139,70 @@ const lastRun = reactive({
 const latestCompassTitle = ref('暂无周报记录')
 const latestCompassTime = ref('暂无数据')
 
-function handleRegenerateCompass() {
-  compassGenerating.value = true
-  setTimeout(() => {
-    compassGenerating.value = false
-    ElMessage.info('功能开发中：风向标生成将接入后台任务')
-  }, 300)
-}
-
 function formatTime(value) {
   if (!value) return '暂无记录'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString('zh-CN', { hour12: false })
 }
+
+function applySummary(data) {
+  if (!data || typeof data !== 'object') return
+  overview.totalPolicies = Number(data.policy_count) || 0
+  overview.pendingReview = Number(data.pending_review_count) || 0
+  overview.lastQueued = Number(data.last_queued_count) || 0
+
+  const ac = data.last_auto_crawler_run
+  if (ac && typeof ac === 'object') {
+    lastRun.run_at = ac.run_at ?? null
+    lastRun.status = ac.status ?? null
+    lastRun.crawled_count = Number(ac.crawled_count) || 0
+    lastRun.filtered_count = Number(ac.filtered_count) || 0
+    lastRun.queued_count = Number(ac.queued_count) || 0
+  } else {
+    lastRun.run_at = null
+    lastRun.status = null
+    lastRun.crawled_count = 0
+    lastRun.filtered_count = 0
+    lastRun.queued_count = 0
+  }
+
+  const rep = data.latest_compass_report
+  if (rep && typeof rep === 'object' && rep.title) {
+    latestCompassTitle.value = rep.title
+    latestCompassTime.value = rep.published_at ? formatTime(rep.published_at) : '已生成'
+  } else {
+    latestCompassTitle.value = '暂无周报记录'
+    latestCompassTime.value = '暂无数据'
+  }
+}
+
+async function loadDashboard() {
+  summaryLoading.value = true
+  try {
+    const data = await api.withAdmin(() => api.get('/admin-ops/dashboard-summary'))
+    applySummary(data)
+  } catch (e) {
+    ElMessage.error(e?.message || '加载概览失败')
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+async function handleRegenerateCompass() {
+  compassGenerating.value = true
+  try {
+    await api.withAdmin(() => api.post('/compass/generate', {}))
+    ElMessage.success('已生成风向标周报')
+    await loadDashboard()
+  } catch (e) {
+    ElMessage.error(e?.message || '生成失败')
+  } finally {
+    compassGenerating.value = false
+  }
+}
+
+onMounted(loadDashboard)
 
 function statusType(status) {
   if (status === 'success') return 'success'

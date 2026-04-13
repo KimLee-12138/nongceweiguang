@@ -36,14 +36,17 @@ def _build_failed_condition_tree(message: str) -> dict[str, Any]:
 
 def compile_policy_text(raw_text: str, title: str | None = None, source: str | None = None) -> Policy:
     compiled = compile_policy_text_by_model(raw_text=raw_text, title=title, source=source)
-    return Policy(
+    corrected_title = compiled.get('corrected_title') or title or '未命名政策'
+    policy = Policy(
         policy_id=None,
-        title=title or '未命名政策',
+        title=corrected_title,
         source=source or '',
         summary=compiled.get('summary') or '',
         raw_text_ref=None,
         root_condition=_build_condition_node(compiled.get('condition_tree') or {}),
     )
+    policy._corrected_title = corrected_title
+    return policy
 
 
 def _append_event(
@@ -80,8 +83,10 @@ def _bootstrap_task_draft(task: PolicyReviewTaskORM) -> None:
 
 def _compile_task_draft(task: PolicyReviewTaskORM) -> dict[str, Any]:
     draft_policy = compile_policy_text(task.raw_text, title=task.title, source=task.source)
+    corrected = getattr(draft_policy, '_corrected_title', None)
+    best_title = corrected or draft_policy.title or task.title
     return {
-        'title': draft_policy.title or task.title,
+        'title': best_title,
         'source': draft_policy.source or task.source or '',
         'summary': draft_policy.summary or '',
         'category': task.draft_category or '其他',
@@ -196,7 +201,13 @@ def create_review_task(
     db.flush()
     _bootstrap_task_draft(task)
     if not defer_enrichment:
-        _apply_model_enrichment(task)
+        try:
+            _apply_model_enrichment(task)
+        except Exception as exc:  # pragma: no cover
+            task.draft_status = 'failed'
+            task.ai_status = 'failed'
+            task.ai_error = str(exc)
+            task.draft_condition_tree = _build_failed_condition_tree(str(exc))
 
     db.flush()
     _append_event(

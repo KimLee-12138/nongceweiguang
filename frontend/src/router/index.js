@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 
 import { ensureAdminSession, ensureUserSession } from '../services/authSession'
 import { safeInternalRedirectPath } from '../utils/safeRedirect'
@@ -17,11 +17,12 @@ export const router = createRouter({
       component: () => import('../views/ChatRouteView.vue'),
       meta: { requiresUser: true, title: '政策对话工作台' },
     },
-    { path: '/insights', component: () => import('../views/InsightsPage.vue') },
-    { path: '/compass', component: () => import('../views/CompassPage.vue') },
-    { path: '/login', component: () => import('../views/LoginPage.vue') },
-    { path: '/register', component: () => import('../views/RegisterPage.vue') },
-    { path: '/sessions', component: () => import('../views/SessionsPage.vue'), meta: { requiresUser: true } },
+    { path: '/insights', component: () => import('../views/InsightsPage.vue'), meta: { title: '政策洞察' } },
+    { path: '/compass', component: () => import('../views/CompassPage.vue'), meta: { title: '政策风向标' } },
+    { path: '/policy-compass', component: () => import('../views/CompassPage.vue'), meta: { title: '政策风向大屏' } },
+    { path: '/login', component: () => import('../views/LoginPage.vue'), meta: { title: '用户登录' } },
+    { path: '/register', component: () => import('../views/RegisterPage.vue'), meta: { title: '用户注册' } },
+    { path: '/sessions', component: () => import('../views/SessionsPage.vue'), meta: { requiresUser: true, title: '会话管理' } },
     {
       path: '/admin/login',
       name: 'AdminLogin',
@@ -31,7 +32,7 @@ export const router = createRouter({
     {
       path: '/admin',
       component: () => import('../views/admin/AdminLayout.vue'),
-      meta: { requiresAdmin: true },
+      meta: { requiresAdmin: true, title: '管理中枢' },
       children: [
         {
           path: '',
@@ -39,7 +40,7 @@ export const router = createRouter({
           component: () => import('../views/admin/AdminDashboard.vue'),
           meta: {
             title: '运营工作台',
-            description: '查看政策库概况、最近自动任务状态和后台快捷入口。',
+            description: '查看政策库概况、近期任务状态与快捷操作入口。',
             section: 'WORKSPACE',
           },
         },
@@ -49,7 +50,7 @@ export const router = createRouter({
           component: () => import('../views/admin/AdminPolicies.vue'),
           meta: {
             title: '政策管理',
-            description: '集中维护结构化政策库，处理摘要补全、详情查看和批量删除。',
+            description: '集中维护结构化政策库，处理摘要补全、详情查看与批量操作。',
             section: 'POLICY LIBRARY',
           },
         },
@@ -88,7 +89,7 @@ export const router = createRouter({
           name: 'AdminPolicyImport',
           component: () => import('../views/admin/AdminPolicyImport.vue'),
           meta: {
-            title: '导入与爬取',
+            title: '导入与爬虫',
             description: '执行手动抓取、文件解析和批量送审，补齐原文采集链路。',
             section: 'INGESTION',
           },
@@ -99,7 +100,7 @@ export const router = createRouter({
           component: () => import('../views/admin/AdminTasks.vue'),
           meta: {
             title: '任务中心',
-            description: '统一查看管理端后台作业的状态、失败明细和重试入口。',
+            description: '统一查看管理端后台作业的状态、失败详情和重试入口。',
             section: 'OPERATIONS',
           },
         },

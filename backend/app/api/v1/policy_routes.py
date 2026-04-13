@@ -1,7 +1,7 @@
 ﻿from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.deps import get_current_admin, get_current_user
@@ -17,6 +17,7 @@ from app.db.session import get_db
 from app.models.admin_models import AdminOperationRunItemORM, AdminOperationRunORM
 from app.models.auth_models import AdminUserORM, EndUserORM
 from app.models.business_models import MatchRecordORM, PolicyORM, UserProfileORM
+from app.models.policy_review_models import PolicyReviewTaskORM
 from app.services.admin_operation_service import consume_run_by_id_in_background, create_run
 from app.services.condition_tree_service import extract_condition_tree_metadata, normalize_condition_tree
 from app.services.crawler_service import (
@@ -67,6 +68,12 @@ def list_policies(db: Session = Depends(get_db)):
     return [_policy_to_out(policy) for policy in policies]
 
 
+@router.get('/count')
+def count_policies(db: Session = Depends(get_db)):
+    total = db.scalar(select(func.count(PolicyORM.id)))
+    return {'count': total or 0}
+
+
 @router.get('/{policy_id}', response_model=PolicyOut)
 def get_policy(policy_id: int, db: Session = Depends(get_db)):
     policy = db.get(PolicyORM, policy_id)
@@ -102,6 +109,42 @@ def delete_policy(policy_id: int, db: Session = Depends(get_db), admin: AdminUse
     db.delete(policy)
     db.commit()
     return {'ok': True}
+
+
+@router.post('/fix-titles')
+def fix_suspicious_titles(db: Session = Depends(get_db), admin: AdminUserORM = Depends(get_current_admin)):
+    """Scan policies with org-like titles and attempt to fix them from review task data."""
+    _ = admin
+    org_suffixes = ('厅', '局', '委', '部', '办', '院', '中心', '会', '所', '站', '处', '司', '署')
+    policy_keywords = ('关于', '通知', '意见', '办法', '规定', '方案', '条例', '公告', '公示', '通报')
+    all_policies = db.scalars(select(PolicyORM).order_by(desc(PolicyORM.id)).limit(500)).all()
+    fixed = []
+    for policy in all_policies:
+        title = (policy.title or '').strip()
+        if not title or len(title) > 20:
+            continue
+        is_suspicious = title.endswith(org_suffixes) and not any(kw in title for kw in policy_keywords)
+        if not is_suspicious:
+            continue
+        task = db.scalar(
+            select(PolicyReviewTaskORM).where(PolicyReviewTaskORM.approved_policy_id == policy.id)
+        )
+        if not task:
+            continue
+        candidate = (task.draft_title or '').strip()
+        if candidate and candidate != title and not (candidate.endswith(org_suffixes) and len(candidate) <= 20):
+            old_title = policy.title
+            policy.title = candidate
+            fixed.append({'id': policy.id, 'old_title': old_title, 'new_title': candidate})
+            continue
+        original_title = (task.title or '').strip()
+        if original_title and original_title != title and not (original_title.endswith(org_suffixes) and len(original_title) <= 20):
+            old_title = policy.title
+            policy.title = original_title
+            fixed.append({'id': policy.id, 'old_title': old_title, 'new_title': original_title})
+    if fixed:
+        db.commit()
+    return {'fixed_count': len(fixed), 'fixed': fixed}
 
 
 @router.post('/compile-text', response_model=CompileTextResponse)

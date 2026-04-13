@@ -1,0 +1,333 @@
+0 verbose cli D:\nodejs\node.exe D:\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.8.2
+2 info using node@v20.20.1
+3 silly config load:file:D:\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\22067\Desktop\农策微光\frontend\.npmrc
+5 silly config load:file:C:\Users\22067\.npmrc
+6 silly config load:file:D:\nodejs\node_global\etc\npmrc
+7 verbose title npm install echarts
+8 verbose argv "install" "echarts" "--save"
+9 verbose logfile logs-max:10 dir:C:\Users\22067\Desktop\农策微光\.npm-cache\_logs\2026-04-13T07_53_01_103Z-
+10 verbose logfile C:\Users\22067\Desktop\农策微光\.npm-cache\_logs\2026-04-13T07_53_01_103Z-debug-0.log
+11 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+12 silly logfile start cleaning logs, removing 1 files
+13 silly logfile done cleaning log files
+14 silly idealTree buildDeps
+15 silly fetch manifest echarts@*
+16 silly packumentCache full:https://registry.npmmirror.com/echarts cache-miss
+17 http fetch GET 200 https://registry.npmmirror.com/echarts 154ms (cache miss)
+18 silly packumentCache full:https://registry.npmmirror.com/echarts set size:59417 disposed:false
+19 silly placeDep ROOT echarts@6.0.0 OK for: frontend@0.0.0 want: *
+20 silly fetch manifest tslib@2.3.0
+21 silly packumentCache full:https://registry.npmmirror.com/tslib cache-miss
+22 silly fetch manifest zrender@6.0.0
+23 silly packumentCache full:https://registry.npmmirror.com/zrender cache-miss
+24 http fetch GET 200 https://registry.npmmirror.com/zrender 42ms (cache miss)
+25 silly packumentCache full:https://registry.npmmirror.com/zrender set size:33628 disposed:false
+26 http fetch GET 200 https://registry.npmmirror.com/tslib 111ms (cache revalidated)
+27 silly packumentCache full:https://registry.npmmirror.com/tslib set size:113340 disposed:false
+28 silly placeDep node_modules/echarts tslib@2.3.0 OK for: echarts@6.0.0 want: 2.3.0
+29 silly placeDep ROOT zrender@6.0.0 OK for: echarts@6.0.0 want: 6.0.0
+30 silly placeDep node_modules/zrender tslib@2.3.0 OK for: zrender@6.0.0 want: 2.3.0
+31 silly reify moves {}
+32 silly audit bulk request {
+32 silly audit   '@babel/helper-string-parser': [ '7.27.1' ],
+32 silly audit   '@babel/helper-validator-identifier': [ '7.28.5' ],
+32 silly audit   '@babel/parser': [ '7.29.2' ],
+32 silly audit   '@babel/types': [ '7.29.0' ],
+32 silly audit   '@ctrl/tinycolor': [ '4.2.0' ],
+32 silly audit   '@element-plus/icons-vue': [ '2.3.2' ],
+32 silly audit   '@emnapi/core': [ '1.9.2' ],
+32 silly audit   '@emnapi/runtime': [ '1.9.2' ],
+32 silly audit   '@emnapi/wasi-threads': [ '1.2.1' ],
+32 silly audit   '@floating-ui/core': [ '1.7.5' ],
+32 silly audit   '@floating-ui/dom': [ '1.7.6' ],
+32 silly audit   '@floating-ui/utils': [ '0.2.11' ],
+32 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+32 silly audit   '@napi-rs/wasm-runtime': [ '1.1.3' ],
+32 silly audit   '@oxc-project/types': [ '0.124.0' ],
+32 silly audit   '@sxzz/popperjs-es': [ '2.11.8' ],
+32 silly audit   '@rolldown/binding-android-arm64': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-darwin-arm64': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-darwin-x64': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-freebsd-x64': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-arm-gnueabihf': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-arm64-gnu': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-arm64-musl': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-ppc64-gnu': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-s390x-gnu': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-x64-gnu': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-linux-x64-musl': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-openharmony-arm64': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-wasm32-wasi': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-win32-arm64-msvc': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/binding-win32-x64-msvc': [ '1.0.0-rc.15' ],
+32 silly audit   '@rolldown/pluginutils': [ '1.0.0-rc.2', '1.0.0-rc.15' ],
+32 silly audit   '@tybys/wasm-util': [ '0.10.1' ],
+32 silly audit   '@types/lodash': [ '4.17.24' ],
+32 silly audit   '@types/lodash-es': [ '4.17.12' ],
+32 silly audit   '@types/trusted-types': [ '2.0.7' ],
+32 silly audit   '@types/web-bluetooth': [ '0.0.20' ],
+32 silly audit   '@vitejs/plugin-vue': [ '6.0.5' ],
+32 silly audit   '@vue/compiler-core': [ '3.5.32' ],
+32 silly audit   '@vue/compiler-dom': [ '3.5.32' ],
+32 silly audit   '@vue/compiler-sfc': [ '3.5.32' ],
+32 silly audit   '@vue/compiler-ssr': [ '3.5.32' ],
+32 silly audit   '@vue/devtools-api': [ '6.6.4' ],
+32 silly audit   '@vue/reactivity': [ '3.5.32' ],
+32 silly audit   '@vue/runtime-core': [ '3.5.32' ],
+32 silly audit   '@vue/runtime-dom': [ '3.5.32' ],
+32 silly audit   '@vue/server-renderer': [ '3.5.32' ],
+32 silly audit   '@vue/shared': [ '3.5.32' ],
+32 silly audit   '@vueuse/core': [ '12.0.0' ],
+32 silly audit   '@vueuse/metadata': [ '12.0.0' ],
+32 silly audit   '@vueuse/shared': [ '12.0.0' ],
+32 silly audit   argparse: [ '2.0.1' ],
+32 silly audit   'async-validator': [ '4.2.5' ],
+32 silly audit   csstype: [ '3.2.3' ],
+32 silly audit   dayjs: [ '1.11.20' ],
+32 silly audit   'detect-libc': [ '2.1.2' ],
+32 silly audit   dompurify: [ '3.3.3' ],
+32 silly audit   'element-plus': [ '2.13.6' ],
+32 silly audit   entities: [ '7.0.1', '4.5.0' ],
+32 silly audit   'estree-walker': [ '2.0.2' ],
+32 silly audit   fdir: [ '6.5.0' ],
+32 silly audit   fsevents: [ '2.3.3' ],
+32 silly audit   lightningcss: [ '1.32.0' ],
+32 silly audit   'lightningcss-android-arm64': [ '1.32.0' ],
+32 silly audit   'lightningcss-darwin-arm64': [ '1.32.0' ],
+32 silly audit   'lightningcss-darwin-x64': [ '1.32.0' ],
+32 silly audit   'lightningcss-freebsd-x64': [ '1.32.0' ],
+32 silly audit   'lightningcss-linux-arm-gnueabihf': [ '1.32.0' ],
+32 silly audit   'lightningcss-linux-arm64-gnu': [ '1.32.0' ],
+32 silly audit   'lightningcss-linux-arm64-musl': [ '1.32.0' ],
+32 silly audit   'lightningcss-linux-x64-gnu': [ '1.32.0' ],
+32 silly audit   'lightningcss-linux-x64-musl': [ '1.32.0' ],
+32 silly audit   'lightningcss-win32-arm64-msvc': [ '1.32.0' ],
+32 silly audit   'lightningcss-win32-x64-msvc': [ '1.32.0' ],
+32 silly audit   'linkify-it': [ '5.0.0' ],
+32 silly audit   lodash: [ '4.18.1' ],
+32 silly audit   'lodash-es': [ '4.18.1' ],
+32 silly audit   'lodash-unified': [ '1.0.3' ],
+32 silly audit   'magic-string': [ '0.30.21' ],
+32 silly audit   'markdown-it': [ '14.1.1' ],
+32 silly audit   mdurl: [ '2.0.0' ],
+32 silly audit   'memoize-one': [ '6.0.0' ],
+32 silly audit   nanoid: [ '3.3.11' ],
+32 silly audit   'normalize-wheel-es': [ '1.2.0' ],
+32 silly audit   picocolors: [ '1.1.1' ],
+32 silly audit   picomatch: [ '4.0.4' ],
+32 silly audit   postcss: [ '8.5.9' ],
+32 silly audit   'punycode.js': [ '2.3.1' ],
+32 silly audit   rolldown: [ '1.0.0-rc.15' ],
+32 silly audit   'source-map-js': [ '1.2.1' ],
+32 silly audit   tinyglobby: [ '0.2.16' ],
+32 silly audit   tslib: [ '2.8.1', '2.3.0' ],
+32 silly audit   'uc.micro': [ '2.1.0' ],
+32 silly audit   vite: [ '8.0.8' ],
+32 silly audit   vue: [ '3.5.32' ],
+32 silly audit   'vue-component-type-helpers': [ '3.2.6' ],
+32 silly audit   'vue-router': [ '4.6.4' ],
+32 silly audit   echarts: [ '6.0.0' ],
+32 silly audit   zrender: [ '6.0.0' ]
+32 silly audit }
+33 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-win32-arm64-msvc
+34 silly reify mark deleted [
+34 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-win32-arm64-msvc'
+34 silly reify ]
+35 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-linux-x64-musl
+36 silly reify mark deleted [
+36 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-linux-x64-musl'
+36 silly reify ]
+37 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-linux-x64-gnu
+38 silly reify mark deleted [
+38 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-linux-x64-gnu'
+38 silly reify ]
+39 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-linux-arm64-musl
+40 silly reify mark deleted [
+40 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-linux-arm64-musl'
+40 silly reify ]
+41 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-linux-arm64-gnu
+42 silly reify mark deleted [
+42 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-linux-arm64-gnu'
+42 silly reify ]
+43 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-linux-arm-gnueabihf
+44 silly reify mark deleted [
+44 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-linux-arm-gnueabihf'
+44 silly reify ]
+45 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-freebsd-x64
+46 silly reify mark deleted [
+46 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-freebsd-x64'
+46 silly reify ]
+47 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-darwin-x64
+48 silly reify mark deleted [
+48 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-darwin-x64'
+48 silly reify ]
+49 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-darwin-arm64
+50 silly reify mark deleted [
+50 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-darwin-arm64'
+50 silly reify ]
+51 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\lightningcss-android-arm64
+52 silly reify mark deleted [
+52 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\lightningcss-android-arm64'
+52 silly reify ]
+53 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\fsevents
+54 silly reify mark deleted [ 'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\fsevents' ]
+55 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-win32-arm64-msvc
+56 silly reify mark deleted [
+56 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-win32-arm64-msvc'
+56 silly reify ]
+57 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-wasm32-wasi
+58 silly reify mark deleted [
+58 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-wasm32-wasi'
+58 silly reify ]
+59 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@emnapi\core
+60 silly reify mark deleted [
+60 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@emnapi\\core'
+60 silly reify ]
+61 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@emnapi\runtime
+62 silly reify mark deleted [
+62 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@emnapi\\runtime'
+62 silly reify ]
+63 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@napi-rs\wasm-runtime
+64 silly reify mark deleted [
+64 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@napi-rs\\wasm-runtime'
+64 silly reify ]
+65 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@emnapi\wasi-threads
+66 silly reify mark deleted [
+66 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@emnapi\\wasi-threads'
+66 silly reify ]
+67 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\tslib
+68 silly reify mark deleted [ 'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\tslib' ]
+69 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@tybys\wasm-util
+70 silly reify mark deleted [
+70 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@tybys\\wasm-util'
+70 silly reify ]
+71 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-openharmony-arm64
+72 silly reify mark deleted [
+72 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-openharmony-arm64'
+72 silly reify ]
+73 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-x64-musl
+74 silly reify mark deleted [
+74 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-x64-musl'
+74 silly reify ]
+75 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-x64-gnu
+76 silly reify mark deleted [
+76 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-x64-gnu'
+76 silly reify ]
+77 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-s390x-gnu
+78 silly reify mark deleted [
+78 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-s390x-gnu'
+78 silly reify ]
+79 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-ppc64-gnu
+80 silly reify mark deleted [
+80 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-ppc64-gnu'
+80 silly reify ]
+81 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-arm64-musl
+82 silly reify mark deleted [
+82 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-arm64-musl'
+82 silly reify ]
+83 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-arm64-gnu
+84 silly reify mark deleted [
+84 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-arm64-gnu'
+84 silly reify ]
+85 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-linux-arm-gnueabihf
+86 silly reify mark deleted [
+86 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-linux-arm-gnueabihf'
+86 silly reify ]
+87 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-freebsd-x64
+88 silly reify mark deleted [
+88 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-freebsd-x64'
+88 silly reify ]
+89 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-darwin-x64
+90 silly reify mark deleted [
+90 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-darwin-x64'
+90 silly reify ]
+91 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-darwin-arm64
+92 silly reify mark deleted [
+92 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-darwin-arm64'
+92 silly reify ]
+93 verbose reify failed optional dependency C:\Users\22067\Desktop\农策微光\frontend\node_modules\@rolldown\binding-android-arm64
+94 silly reify mark deleted [
+94 silly reify   'C:\\Users\\22067\\Desktop\\农策微光\\frontend\\node_modules\\@rolldown\\binding-android-arm64'
+94 silly reify ]
+95 silly tarball no local data for zrender@https://registry.npmmirror.com/zrender/-/zrender-6.0.0.tgz. Extracting by manifest.
+96 silly tarball no local data for echarts@https://registry.npmmirror.com/echarts/-/echarts-6.0.0.tgz. Extracting by manifest.
+97 silly tarball no local data for tslib@https://registry.npmmirror.com/tslib/-/tslib-2.3.0.tgz. Extracting by manifest.
+98 silly tarball no local data for tslib@https://registry.npmmirror.com/tslib/-/tslib-2.3.0.tgz. Extracting by manifest.
+99 http fetch POST 404 https://registry.npmmirror.com/-/npm/v1/security/advisories/bulk 69ms
+100 silly audit bulk request failed [object Object]
+101 http fetch POST 404 https://registry.npmmirror.com/-/npm/v1/security/audits/quick 15ms
+102 verbose audit error HttpErrorGeneral: 404 Not Found - POST https://registry.npmmirror.com/-/npm/v1/security/audits/quick - [NOT_IMPLEMENTED] /-/npm/v1/security/* not implemented yet
+102 verbose audit error     at D:\nodejs\node_modules\npm\node_modules\npm-registry-fetch\lib\check-response.js:95:15
+102 verbose audit error     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+102 verbose audit error     at async [getReport] (D:\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\audit-report.js:336:21)
+102 verbose audit error     at async AuditReport.run (D:\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\audit-report.js:106:19) {
+102 verbose audit error   headers: [Object: null prototype] {
+102 verbose audit error     server: [ 'Tengine' ],
+102 verbose audit error     date: [ 'Mon, 13 Apr 2026 07:53:02 GMT' ],
+102 verbose audit error     'content-type': [ 'application/json' ],
+102 verbose audit error     'transfer-encoding': [ 'chunked' ],
+102 verbose audit error     connection: [ 'keep-alive' ],
+102 verbose audit error     'strict-transport-security': [ 'max-age=5184000' ],
+102 verbose audit error     via: [ 'kunlun18.cn5230[,404666]' ],
+102 verbose audit error     'timing-allow-origin': [ '*' ],
+102 verbose audit error     eagleid: [ '6f30472f17760667824573092e' ],
+102 verbose audit error     'x-fetch-attempts': [ '1' ]
+102 verbose audit error   },
+102 verbose audit error   statusCode: 404,
+102 verbose audit error   code: 'E404',
+102 verbose audit error   method: 'POST',
+102 verbose audit error   uri: 'https://registry.npmmirror.com/-/npm/v1/security/audits/quick',
+102 verbose audit error   body: {
+102 verbose audit error     error: '[NOT_IMPLEMENTED] /-/npm/v1/security/* not implemented yet'
+102 verbose audit error   },
+102 verbose audit error   pkgid: undefined
+102 verbose audit error }
+103 silly audit error [object Object]
+104 silly audit report null
+105 http fetch GET 200 https://cdn.npmmirror.com/packages/tslib/2.3.0/tslib-2.3.0.tgz 277ms (cache miss)
+106 http fetch GET 200 https://cdn.npmmirror.com/packages/tslib/2.3.0/tslib-2.3.0.tgz 297ms (cache miss)
+107 http fetch GET 200 https://cdn.npmmirror.com/packages/zrender/6.0.0/zrender-6.0.0.tgz 1131ms (cache miss)
+108 http fetch GET 200 https://cdn.npmmirror.com/packages/echarts/6.0.0/echarts-6.0.0.tgz 31686ms (cache miss)
+109 silly ADD node_modules/zrender
+110 silly ADD node_modules/zrender/node_modules/tslib
+111 silly ADD node_modules/echarts
+112 silly ADD node_modules/echarts/node_modules/tslib
+113 silly ADD
+114 silly ADD
+115 silly ADD
+116 silly ADD
+117 silly ADD
+118 silly ADD
+119 silly ADD
+120 silly ADD
+121 silly ADD
+122 silly ADD
+123 silly ADD
+124 silly ADD
+125 silly ADD
+126 silly ADD
+127 silly ADD
+128 silly ADD
+129 silly ADD
+130 silly ADD
+131 silly ADD
+132 silly ADD
+133 silly ADD
+134 silly ADD
+135 silly ADD
+136 silly ADD
+137 silly ADD
+138 silly ADD
+139 silly ADD
+140 silly ADD
+141 silly ADD
+142 silly ADD
+143 silly ADD
+144 verbose cwd C:\Users\22067\Desktop\农策微光\frontend
+145 verbose os Windows_NT 10.0.26200
+146 verbose node v20.20.1
+147 verbose npm  v10.8.2
+148 verbose exit 0
+149 info ok
