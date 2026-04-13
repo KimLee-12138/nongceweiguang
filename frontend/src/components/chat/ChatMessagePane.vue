@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import DOMPurify from 'dompurify'
 import MarkdownIt from 'markdown-it'
 
@@ -31,9 +31,28 @@ markdown.renderer.rules.link_open = function linkOpen(tokens, idx, options, env,
   return defaultLinkRender(tokens, idx, options, env, self)
 }
 
-function renderAssistantMarkdown(content) {
+function renderMarkdownRaw(content) {
   const html = markdown.render(String(content || ''))
   return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } })
+}
+
+const renderedHtmlMap = computed(() => {
+  const map = new Map()
+  for (let i = 0; i < props.messages.length; i++) {
+    const msg = props.messages[i]
+    if (msg.role !== 'assistant') continue
+    const isLast = i === props.messages.length - 1
+    const isStreaming = props.streaming && isLast
+    if (isStreaming) continue
+    const key = msg.id || msg.localId || i
+    map.set(key, renderMarkdownRaw(msg.content))
+  }
+  return map
+})
+
+function renderAssistantMarkdown(msg, index) {
+  const key = msg.id || msg.localId || index
+  return renderedHtmlMap.value.get(key) ?? renderMarkdownRaw(msg.content)
 }
 
 function eligibilityLabel(level) {
@@ -161,7 +180,7 @@ defineExpose({ scrollToBottom })
                 </div>
               </div>
 
-              <div class="assistant-text assistant-rich" v-html="renderAssistantMarkdown(msg.content)" />
+              <div class="assistant-text assistant-rich" v-html="renderAssistantMarkdown(msg, i)" />
               <span v-if="streaming && i === messages.length - 1" class="terminal-cursor" />
             </template>
           </div>

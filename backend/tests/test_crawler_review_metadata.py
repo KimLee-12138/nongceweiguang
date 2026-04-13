@@ -26,8 +26,13 @@ from app.services.crawler_service import (
     CrawlerError,
     CrawlerSource,
     _extract_links,
+    _extract_title_candidates,
     _fetch_html,
+    _is_likely_org_name,
     _parse_article_page,
+    _pick_best_title,
+    _strip_site_suffix,
+    _title_score,
     crawl_policy_candidates,
 )
 from app.services.review_queue_service import approve_review_task, create_review_task, enrich_review_task
@@ -789,4 +794,159 @@ def test_model_readiness_route_returns_provider_status(monkeypatch):
     assert payload['ok'] is True
     assert payload['status'] == 'ready'
     assert payload['detail']['provider'] == 'deepseek'
+
+
+# ---------------------------------------------------------------------------
+# Title extraction unit tests
+# ---------------------------------------------------------------------------
+
+def test_strip_site_suffix_removes_trailing_org_name():
+    assert _strip_site_suffix('省农业农村厅关于印发方案的通知-湖北省农业农村厅') == '省农业农村厅关于印发方案的通知'
+    assert _strip_site_suffix('政务数据共享条例-湖北省农业农村厅') == '政务数据共享条例'
+    assert _strip_site_suffix('碳达峰碳中和工作的意见--湖北省农业农村厅') == '碳达峰碳中和工作的意见'
+    assert _strip_site_suffix('某政策—湖北省财政厅') == '某政策'
+
+
+def test_strip_site_suffix_preserves_dashes_in_content():
+    title = '省农业农村厅关于印发《行动方案（2024-2026年）》的通知-湖北省农业农村厅'
+    result = _strip_site_suffix(title)
+    assert result == '省农业农村厅关于印发《行动方案（2024-2026年）》的通知'
+
+
+def test_strip_site_suffix_no_suffix():
+    assert _strip_site_suffix('省农业农村厅关于开展设施农业示范的通知') == '省农业农村厅关于开展设施农业示范的通知'
+
+
+def test_is_likely_org_name_identifies_orgs():
+    assert _is_likely_org_name('湖北省农业农村厅') is True
+    assert _is_likely_org_name('国务院') is True
+    assert _is_likely_org_name('省财政厅') is True
+    assert _is_likely_org_name('新华社') is False  # len <= 20, but '社' not in suffixes
+
+
+def test_is_likely_org_name_allows_policy_titles_with_org_suffix():
+    assert _is_likely_org_name('省农业农村厅关于开展设施农业示范的通知') is False
+    assert _is_likely_org_name('省人民政府办公厅关于印发支持措施的通知') is False
+
+
+def test_title_score_prefers_policy_keywords():
+    org = '湖北省农业农村厅'
+    policy = '省农业农村厅关于印发方案的通知'
+    truncated = '省农业农村厅关于印发《行动方案（2024'
+    assert _title_score(policy) > _title_score(org)
+    assert _title_score(policy) > _title_score(truncated)
+
+
+def test_pick_best_title_selects_policy_over_org():
+    candidates = [
+        '湖北省农业农村厅',
+        '省农业农村厅关于印发《湖北省高标准农田建设行动方案》的通知',
+        '省农业农村厅关于印发《湖北省高标准农田建设行动方案》的通知-湖北省农业农村厅',
+    ]
+    result = _pick_best_title(candidates)
+    assert '关于印发' in result
+    assert not result.endswith('湖北省农业农村厅')
+
+
+_REALISTIC_HTML = '''
+<html>
+<head>
+  <title>省农业农村厅关于印发《湖北省高质量推进高标准农田建设行动方案（2024-2026年）》的通知-湖北省农业农村厅</title>
+</head>
+<body>
+  <h1>湖北省农业农村厅</h1>
+  <div class="crumb">首页 > 政府信息公开 > 政策 > 规范性文件</div>
+  <h2>省农业农村厅关于印发《湖北省高质量推进高标准农田建设行动方案（2024-2026年）》的通知</h2>
+  <h4>省农业农村厅关于印发《湖北省高质量推进高标准农田建设行动方案（2024-2026年）》的通知</h4>
+  <p>2024-11-25 10:40 | 湖北省农业农村厅</p>
+  <table>
+    <tr><td>索 引 号</td><td>011043305/2025-04520</td><td>发文日期</td><td>2024-11-24</td></tr>
+    <tr><td>发布机构</td><td>湖北省农业农村厅</td><td>文 号</td><td>鄂农发〔2024〕52号</td></tr>
+    <tr><td>分 类</td><td>农业、畜牧业、渔业</td><td>效力状态</td><td>有效</td></tr>
+  </table>
+  <p>各市、州、县农业农村局：根据省政府的工作部署，按照相关要求，为进一步推动高标准农田建设提质增效，经省人民政府同意，现将方案印发...</p>
+</body>
+</html>
+'''
+
+
+def test_extract_title_candidates_from_realistic_html():
+    from app.services.crawler_service import _page_text
+    body_text = _page_text(_REALISTIC_HTML)
+    candidates = _extract_title_candidates(_REALISTIC_HTML, body_text)
+
+    has_correct = any(
+        '高质量推进高标准农田建设' in c and '2024-2026' in c
+        for c in candidates
+    )
+    assert has_correct, f'No correct title candidate found in: {candidates}'
+
+
+def test_parse_article_page_picks_h2_over_org_h1():
+    source = CrawlerSource(
+        id='hubei_agri_policy',
+        name='湖北省农业农村厅-规范性文件',
+        url='https://nyt.hubei.gov.cn/zfxxgk/zc_GK2020/gfxwj_GK2020/',
+        file_type='gfxwj',
+    )
+
+    parsed = _parse_article_page(
+        _REALISTIC_HTML,
+        link='https://nyt.hubei.gov.cn/zfxxgk/zc_GK2020/gfxwj_GK2020/202502/t20250210_5536547.shtml',
+        source=source,
+    )
+
+    assert '高质量推进高标准农田建设' in parsed['title']
+    assert '2024-2026' in parsed['title']
+    assert parsed['title'] != '湖北省农业农村厅'
+
+
+def test_parse_article_page_with_only_h1_org_and_title_tag():
+    """When h2 is absent, the <title> tag split should still produce a correct title."""
+    html = '''
+    <html>
+    <head><title>政务数据共享条例-湖北省农业农村厅</title></head>
+    <body>
+      <h1>湖北省农业农村厅</h1>
+      <p>2025-06-10 09:55 | 国务院</p>
+      <p>发布机构：国务院  文号：国令第809号</p>
+      <p>《政务数据共享条例》已经2025年5月9日国务院第59次常务会议通过，现予公布，自2025年8月1日起施行。第一条 为了推进政务数据安全有序高效共享利用，提升政府数字化治理能力...</p>
+    </body>
+    </html>
+    '''
+    source = CrawlerSource(
+        id='hubei_agri_other_public',
+        name='湖北省农业农村厅-其他主动公开文件',
+        url='https://nyt.hubei.gov.cn/zfxxgk/zc_GK2020/qtzdgkwj_GK2020/',
+        file_type='qtzd',
+    )
+    parsed = _parse_article_page(
+        html,
+        link='https://nyt.hubei.gov.cn/zfxxgk/zc_GK2020/qtzdgkwj_GK2020/tz/202506/t20250610_5685341.shtml',
+        source=source,
+    )
+    assert parsed['title'] == '政务数据共享条例'
+    assert parsed['title'] != '湖北省农业农村厅'
+
+
+def test_title_extraction_with_double_dash_separator():
+    html = '''
+    <html>
+    <head><title>【政策文件】中共中央国务院关于做好碳达峰碳中和工作的意见--湖北省农业农村厅</title></head>
+    <body>
+      <h1>湖北省农业农村厅</h1>
+      <h2>【政策文件】中共中央国务院关于做好碳达峰碳中和工作的意见</h2>
+      <p>2021-09-22 16:05 | 中共中央国务院</p>
+      <p>实现碳达峰、碳中和，是以习近平同志为核心的党中央统筹国内国际两个大局作出的重大战略决策...</p>
+    </body>
+    </html>
+    '''
+    source = CrawlerSource(id='test', name='test', url='https://nyt.hubei.gov.cn/zfxxgk/', file_type='gfxwj')
+    parsed = _parse_article_page(
+        html,
+        link='https://nyt.hubei.gov.cn/zfxxgk/zc_GK2020/gfxwj_GK2020/202111/t20211117_3867159.shtml',
+        source=source,
+    )
+    assert '碳达峰碳中和' in parsed['title']
+    assert parsed['title'] != '湖北省农业农村厅'
 

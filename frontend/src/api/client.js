@@ -70,7 +70,6 @@ async function withAutoRefresh(role, fn) {
     return await fn()
   } catch (e) {
     if (e?.status !== 401) throw e
-    // 401 尝试 refresh 再重试一次
     try {
       if (role === 'admin') {
         await fetchJson('/auth/refresh', { method: 'POST' })
@@ -84,7 +83,14 @@ async function withAutoRefresh(role, fn) {
           detail: { role, error: refreshErr?.message || 'refresh_failed' },
         })
       )
-      throw e
+      const wrapped = new Error(
+        `登录状态已过期，自动续期失败（${refreshErr?.message || '未知原因'}），请重新登录。`
+      )
+      wrapped.status = 401
+      wrapped.code = 'REFRESH_FAILED'
+      wrapped.originalError = e
+      wrapped.refreshError = refreshErr
+      throw wrapped
     }
   }
 }

@@ -453,35 +453,79 @@ def _normalize_link(href: str, base_url: str) -> str:
     return full
 
 
+_ORG_SUFFIXES = ('厅', '局', '委', '部', '办', '院', '中心', '会', '所', '站', '处', '司', '署')
+_POLICY_KEYWORDS = ('关于', '通知', '意见', '办法', '规定', '方案', '条例', '公告', '公示', '通报', '规划', '实施', '措施', '决定', '批复')
+
+
 def _is_likely_org_name(text: str) -> bool:
     """Check if text looks like an organization name rather than a policy title."""
     text = text.strip()
     if not text or len(text) < 3:
         return True
-    org_suffixes = ('厅', '局', '委', '部', '办', '院', '中心', '会', '所', '站', '处', '司', '署')
-    if text.endswith(org_suffixes):
-        if len(text) <= 20 and not any(kw in text for kw in ('关于', '通知', '意见', '办法', '规定', '方案', '条例', '公告', '公示', '通报')):
+    if text.endswith(_ORG_SUFFIXES):
+        if len(text) <= 20 and not any(kw in text for kw in _POLICY_KEYWORDS):
             return True
     return False
 
 
+def _strip_site_suffix(title: str) -> str:
+    """Remove trailing site name (e.g. '-湖北省农业农村厅') from a <title> tag value."""
+    for sep in ('--', '—', ' - ', ' _ ', ' | ', '-', '_', '|'):
+        idx = title.rfind(sep)
+        if idx <= 0:
+            continue
+        suffix = title[idx + len(sep):].strip()
+        if suffix and _is_likely_org_name(suffix):
+            return title[:idx].strip()
+    return title
+
+
+def _title_score(text: str) -> int:
+    """Score a title candidate; higher is better."""
+    if not text:
+        return -1000
+    score = len(text)
+    if _is_likely_org_name(text):
+        score -= 500
+    if _strip_site_suffix(text) != text:
+        score -= 200
+    for kw in _POLICY_KEYWORDS:
+        if kw in text:
+            score += 100
+    if re.search(r'[〔\[（(]\d{4}[〕\]）)]\d*号', text):
+        score += 50
+    return score
+
+
 def _pick_best_title(candidates: list[str]) -> str:
-    """Pick the best policy title from candidates, preferring longer, non-org-name strings."""
-    valid = [c for c in candidates if c and not _is_likely_org_name(c)]
-    if not valid:
-        valid = [c for c in candidates if c]
-    if not valid:
+    """Pick the best policy title from candidates using a scoring heuristic."""
+    if not candidates:
         return ''
-    return max(valid, key=len)
+    scored = [(c, _title_score(c)) for c in candidates if c]
+    if not scored:
+        return ''
+    scored.sort(key=lambda pair: pair[1], reverse=True)
+    return scored[0][0]
 
 
 def _extract_title_candidates(page_html: str, body_text: str) -> list[str]:
     """Extract multiple title candidates from various HTML sources."""
     candidates: list[str] = []
 
+    h2 = _clean_text(_first_match([r'<h2[^>]*>(.*?)</h2>'], page_html))
+    if h2 and len(h2) > 6:
+        candidates.append(h2)
+
     h1 = _clean_text(_first_match([r'<h1[^>]*>(.*?)</h1>'], page_html))
     if h1:
         candidates.append(h1)
+
+    meta_article = _clean_text(_first_match([
+        r'<meta[^>]+name=[\'"]ArticleTitle[\'"][^>]+content=[\'"]([^\'"]+)[\'"]',
+        r'<meta[^>]+content=[\'"]([^\'"]+)[\'"][^>]+name=[\'"]ArticleTitle[\'"]',
+    ], page_html))
+    if meta_article:
+        candidates.append(meta_article)
 
     og_title = _clean_text(_first_match([r'<meta[^>]+property=[\'"]og:title[\'"][^>]+content=[\'"]([^\'"]+)[\'"]'], page_html))
     if og_title:
@@ -489,22 +533,29 @@ def _extract_title_candidates(page_html: str, body_text: str) -> list[str]:
 
     raw_title = _clean_text(_first_match([r'<title[^>]*>(.*?)</title>'], page_html))
     if raw_title:
-        cleaned = re.split(r'\s*[-_|—]\s*', raw_title)[0].strip()
-        if cleaned:
+        cleaned = _strip_site_suffix(raw_title)
+        if cleaned and cleaned != raw_title:
             candidates.append(cleaned)
-        if raw_title != cleaned:
+        else:
             candidates.append(raw_title)
 
-    for pattern in (r'class=[\'"][^\'\"]*article[_-]?title[^\'\"]*[\'"]', r'class=[\'"][^\'\"]*detail[_-]?title[^\'\"]*[\'"]'):
+    title_class_patterns = (
+        r'class=[\'"][^\'\"]*article[_-]?title[^\'\"]*[\'"]',
+        r'class=[\'"][^\'\"]*detail[_-]?title[^\'\"]*[\'"]',
+        r'class=[\'"][^\'\"]*ewb[_-].*?title[^\'\"]*[\'"]',
+        r'class=[\'"][^\'\"]*xxgk[_-].*?title[^\'\"]*[\'"]',
+        r'class=[\'"][^\'\"]*con[_-]?title[^\'\"]*[\'"]',
+    )
+    for pattern in title_class_patterns:
         match = re.search(rf'<[^>]+{pattern}[^>]*>(.*?)</[^>]+>', page_html, flags=re.IGNORECASE | re.DOTALL)
         if match:
             text = _clean_text(match.group(1))
-            if text:
+            if text and len(text) > 6:
                 candidates.append(text)
 
-    h2 = _clean_text(_first_match([r'<h2[^>]*>(.*?)</h2>'], page_html))
-    if h2 and len(h2) > 8:
-        candidates.append(h2)
+    h4 = _clean_text(_first_match([r'<h4[^>]*>(.*?)</h4>'], page_html))
+    if h4 and len(h4) > 8:
+        candidates.append(h4)
 
     if not candidates:
         candidates.append(body_text[:60])

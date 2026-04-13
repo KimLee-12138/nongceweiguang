@@ -291,75 +291,78 @@ def stream_chat(
         }
 
     def event_gen() -> Generator[str, None, None]:
-        # 开场 meta
-        yield _sse("message_meta", {"conversation_id": conv_id, "assistant_message_id": assistant_message_id})
-
-        if policy_ctx:
-            yield _sse("policy_context", policy_ctx)
-        if policy_report:
-            yield _sse("policy_report", policy_report)
-
-        interpretation_report = {
-            "eligibility_level": "medium",
-            "key_points": [],
-            "next_steps": list((match_summary or {}).get("action_steps") or [])[:3],
-            "risk_warnings": list((match_summary or {}).get("risk_warnings") or [])[:3],
-            "provider": "fallback",
-        }
-        text = _match_based_fallback_answer(
-            question=payload.message,
-            mode=payload.mode,
-            profile_snapshot=profile_snapshot,
-            policy_ctx=policy_ctx,
-            match_summary=match_summary,
-        )
-
+        acc = ""
+        error_text = ""
         try:
-            result = generate_chat_interpretation_payload(
+            yield _sse("message_meta", {"conversation_id": conv_id, "assistant_message_id": assistant_message_id})
+
+            if policy_ctx:
+                yield _sse("policy_context", policy_ctx)
+            if policy_report:
+                yield _sse("policy_report", policy_report)
+
+            interpretation_report = {
+                "eligibility_level": "medium",
+                "key_points": [],
+                "next_steps": list((match_summary or {}).get("action_steps") or [])[:3],
+                "risk_warnings": list((match_summary or {}).get("risk_warnings") or [])[:3],
+                "provider": "fallback",
+            }
+            text = _match_based_fallback_answer(
                 question=payload.message,
                 mode=payload.mode,
-                profile=profile_snapshot,
-                policy=policy_ctx,
+                profile_snapshot=profile_snapshot,
+                policy_ctx=policy_ctx,
                 match_summary=match_summary,
-                recent_messages=recent_messages,
             )
-            text = result["answer"]
-            interpretation_report = result["interpretation_report"]
-        except ModelProviderError as exc:
-            interpretation_report["error"] = str(exc)
 
-        yield _sse("interpretation_report", interpretation_report)
+            try:
+                result = generate_chat_interpretation_payload(
+                    question=payload.message,
+                    mode=payload.mode,
+                    profile=profile_snapshot,
+                    policy=policy_ctx,
+                    match_summary=match_summary,
+                    recent_messages=recent_messages,
+                )
+                text = result["answer"]
+                interpretation_report = result["interpretation_report"]
+            except ModelProviderError as exc:
+                interpretation_report["error"] = str(exc)
 
-        acc = ""
-        for chunk in _chunk_text(text):
-            acc += chunk
-            yield _sse("content", {"delta": chunk})
-            time.sleep(0.005)
+            yield _sse("interpretation_report", interpretation_report)
 
-        # 结束事件
-        yield _sse("content_done", {"ok": True, "provider": interpretation_report.get("provider")})
+            for chunk in _chunk_text(text):
+                acc += chunk
+                yield _sse("content", {"delta": chunk})
+                time.sleep(0.005)
 
-        # 落库最终内容与 render_payload
-        render_payload = {}
-        if policy_ctx:
-            render_payload["policy_context"] = policy_ctx
-        if policy_report:
-            render_payload["policy_report"] = policy_report
-        if interpretation_report:
-            render_payload["interpretation_report"] = interpretation_report
+            yield _sse("content_done", {"ok": True, "provider": interpretation_report.get("provider")})
+        except Exception as exc:
+            error_text = str(exc)
+            yield _sse("content_done", {"ok": False, "error": error_text})
+        finally:
+            final_status = "failed" if error_text else "done"
+            render_payload: dict[str, Any] = {}
+            if policy_ctx:
+                render_payload["policy_context"] = policy_ctx
+            if policy_report:
+                render_payload["policy_report"] = policy_report
+            if interpretation_report:
+                render_payload["interpretation_report"] = interpretation_report
 
-        assistant_row = db.get(ChatMessageORM, assistant_message_id)
-        if assistant_row:
-            assistant_row.content = acc
-            assistant_row.status = "done"
-            assistant_row.render_payload_json = render_payload
-            assistant_row.error_message = None
-            assistant_row.citation_json = {"policy_id": policy_id} if policy_id else {}
+            assistant_row = db.get(ChatMessageORM, assistant_message_id)
+            if assistant_row:
+                assistant_row.content = acc
+                assistant_row.status = final_status
+                assistant_row.render_payload_json = render_payload
+                assistant_row.error_message = error_text or None
+                assistant_row.citation_json = {"policy_id": policy_id} if policy_id else {}
 
-        conv_row = db.get(ChatConversationORM, conv_id)
-        if conv_row:
-            conv_row.last_message_at = time_to_dt()
-        db.commit()
+            conv_row = db.get(ChatConversationORM, conv_id)
+            if conv_row:
+                conv_row.last_message_at = time_to_dt()
+            db.commit()
 
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
@@ -439,54 +442,60 @@ def stream_agri_llm_chat(
     policy_id = policy.id if policy else None
 
     def event_gen() -> Generator[str, None, None]:
-        yield _sse("message_meta", {"conversation_id": conv_id, "assistant_message_id": assistant_message_id})
-        if policy_ctx:
-            yield _sse("policy_context", policy_ctx)
-
-        qa_report = {"in_scope": True, "key_points": [], "followups": [], "provider": "fallback"}
-        text = _agri_llm_fallback_answer(
-            question=payload.message,
-            profile_snapshot=profile_snapshot,
-            policy_ctx=policy_ctx,
-        )
-        try:
-            result = generate_agri_policy_qa_payload(
-                question=payload.message,
-                profile=profile_snapshot if profile_snapshot else None,
-                policy=policy_ctx,
-                recent_messages=recent_messages,
-            )
-            text = result["answer"]
-            qa_report = result["qa_report"]
-        except ModelProviderError as exc:
-            qa_report["error"] = str(exc)
-
-        yield _sse("agri_qa_report", qa_report)
-
         acc = ""
-        for chunk in _chunk_text(text):
-            acc += chunk
-            yield _sse("content", {"delta": chunk})
-            time.sleep(0.005)
+        error_text = ""
+        qa_report: dict[str, Any] = {"in_scope": True, "key_points": [], "followups": [], "provider": "fallback"}
+        try:
+            yield _sse("message_meta", {"conversation_id": conv_id, "assistant_message_id": assistant_message_id})
+            if policy_ctx:
+                yield _sse("policy_context", policy_ctx)
 
-        yield _sse("content_done", {"ok": True, "provider": qa_report.get("provider")})
+            text = _agri_llm_fallback_answer(
+                question=payload.message,
+                profile_snapshot=profile_snapshot,
+                policy_ctx=policy_ctx,
+            )
+            try:
+                result = generate_agri_policy_qa_payload(
+                    question=payload.message,
+                    profile=profile_snapshot if profile_snapshot else None,
+                    policy=policy_ctx,
+                    recent_messages=recent_messages,
+                )
+                text = result["answer"]
+                qa_report = result["qa_report"]
+            except ModelProviderError as exc:
+                qa_report["error"] = str(exc)
 
-        render_payload = {"agri_qa_report": qa_report}
-        if policy_ctx:
-            render_payload["policy_context"] = policy_ctx
+            yield _sse("agri_qa_report", qa_report)
 
-        assistant_row = db.get(ChatMessageORM, assistant_message_id)
-        if assistant_row:
-            assistant_row.content = acc
-            assistant_row.status = "done"
-            assistant_row.render_payload_json = render_payload
-            assistant_row.error_message = None
-            assistant_row.citation_json = {"policy_id": policy_id} if policy_id else {}
+            for chunk in _chunk_text(text):
+                acc += chunk
+                yield _sse("content", {"delta": chunk})
+                time.sleep(0.005)
 
-        conv_row = db.get(ChatConversationORM, conv_id)
-        if conv_row:
-            conv_row.last_message_at = time_to_dt()
-        db.commit()
+            yield _sse("content_done", {"ok": True, "provider": qa_report.get("provider")})
+        except Exception as exc:
+            error_text = str(exc)
+            yield _sse("content_done", {"ok": False, "error": error_text})
+        finally:
+            final_status = "failed" if error_text else "done"
+            render_payload: dict[str, Any] = {"agri_qa_report": qa_report}
+            if policy_ctx:
+                render_payload["policy_context"] = policy_ctx
+
+            assistant_row = db.get(ChatMessageORM, assistant_message_id)
+            if assistant_row:
+                assistant_row.content = acc
+                assistant_row.status = final_status
+                assistant_row.render_payload_json = render_payload
+                assistant_row.error_message = error_text or None
+                assistant_row.citation_json = {"policy_id": policy_id} if policy_id else {}
+
+            conv_row = db.get(ChatConversationORM, conv_id)
+            if conv_row:
+                conv_row.last_message_at = time_to_dt()
+            db.commit()
 
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 

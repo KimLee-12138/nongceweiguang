@@ -32,6 +32,7 @@ const savingGlossary = ref(false)
 const deletingGlossaryId = ref(null)
 const editingGlossaryId = ref(null)
 const isScrolled = ref(false)
+const mobileMenuOpen = ref(false)
 const userMe = ref({ authenticated: false })
 const adminMe = ref({ authenticated: false })
 
@@ -311,25 +312,29 @@ onBeforeUnmount(() => {
   <div class="compass-page">
     <nav class="nav-bar" :class="{ 'nav-scrolled': isScrolled }">
       <div class="nav-container">
-        <div class="nav-brand" @click="go('/')">
+        <a class="nav-brand" href="/" @click.prevent="go('/')">
           <img class="brand-logo" :src="logoIcon" alt="AgriPolicy AI" />
           <span class="brand-titletext">AgriPolicy&nbsp;AI</span>
-        </div>
-        <div class="nav-menu">
-          <a class="nav-link" @click="go('/')">首页</a>
-          <a class="nav-link" @click="go('/insights')">政策洞察</a>
-          <a class="nav-link" @click="go('/chat')">智能工作台</a>
-          <a class="nav-link" @click="go(consoleEntryPath)">管理中枢</a>
-          <div class="nav-divider"></div>
+        </a>
+        <button class="nav-hamburger" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="打开导航菜单">
+          <span /><span /><span />
+        </button>
+
+        <div class="nav-menu" :class="{ 'nav-menu--open': mobileMenuOpen }">
+          <a class="nav-link" href="/" @click.prevent="go('/'); mobileMenuOpen = false">首页</a>
+          <a class="nav-link" href="/insights" @click.prevent="go('/insights'); mobileMenuOpen = false">政策洞察</a>
+          <a class="nav-link" href="/chat" @click.prevent="go('/chat'); mobileMenuOpen = false">智能工作台</a>
+          <a class="nav-link" :href="consoleEntryPath" @click.prevent="go(consoleEntryPath); mobileMenuOpen = false">管理中枢</a>
+          <div class="nav-divider" role="separator"></div>
           <template v-if="!hasUser">
-            <a class="nav-link" @click="go('/login')">登录</a>
-            <a class="nav-link" @click="go('/register')">注册</a>
+            <a class="nav-link" href="/login" @click.prevent="go('/login'); mobileMenuOpen = false">登录</a>
+            <a class="nav-link" href="/register" @click.prevent="go('/register'); mobileMenuOpen = false">注册</a>
           </template>
           <template v-else>
-            <a class="nav-link" @click="logoutUser">退出用户</a>
+            <a class="nav-link" href="#" role="button" @click.prevent="logoutUser(); mobileMenuOpen = false">退出用户</a>
           </template>
           <template v-if="hasAdmin">
-            <a class="nav-link" @click="logoutAdmin">退出管理员</a>
+            <a class="nav-link" href="#" role="button" @click.prevent="logoutAdmin(); mobileMenuOpen = false">退出管理员</a>
           </template>
         </div>
       </div>
@@ -389,9 +394,9 @@ onBeforeUnmount(() => {
       <div class="footer-inner">
         <p>© 2026 农策微光 (Agricultural Policy Intelligence). All rights reserved.</p>
         <div class="footer-links">
-          <span @click="go('/')">首页</span>
-          <span @click="go('/insights')">政策洞察</span>
-          <span @click="go('/chat')">智能工作台</span>
+          <a href="/" @click.prevent="go('/')">首页</a>
+          <a href="/insights" @click.prevent="go('/insights')">政策洞察</a>
+          <a href="/chat" @click.prevent="go('/chat')">智能工作台</a>
         </div>
       </div>
     </footer>
@@ -563,6 +568,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  text-decoration: none;
 }
 .brand-logo {
   height: 28px;
@@ -648,13 +654,14 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 20px;
 }
-.footer-links span {
+.footer-links a {
   font-size: 12px;
   color: rgba(228, 231, 218, 0.45);
   cursor: pointer;
+  text-decoration: none;
   transition: color 0.2s;
 }
-.footer-links span:hover {
+.footer-links a:hover {
   color: #dcc386;
 }
 
@@ -781,15 +788,58 @@ onBeforeUnmount(() => {
   }
 }
 
+/* ── Hamburger button (hidden on desktop) ─────────────────── */
+.nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 110;
+}
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: rgba(248, 243, 231, 0.8);
+  border-radius: 2px;
+  transition: background 0.3s;
+}
+
 @media (max-width: 720px) {
   .compass-body {
     padding: 20px 14px 0;
   }
-  .nav-menu .nav-link:not(:last-child) {
+  .nav-hamburger {
+    display: flex;
+  }
+  .nav-menu {
     display: none;
+    position: absolute;
+    top: 60px;
+    right: 0;
+    left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(13, 31, 23, 0.96);
+    backdrop-filter: saturate(180%) blur(20px);
+    padding: 12px 32px 20px;
+    border-bottom: 1px solid rgba(109, 255, 188, 0.06);
+  }
+  .nav-menu--open {
+    display: flex;
+  }
+  .nav-menu .nav-link {
+    padding: 10px 0;
+    font-size: 13px;
   }
   .nav-divider {
-    display: none;
+    width: 100%;
+    height: 1px;
+    margin: 6px 0;
   }
   .footer-inner {
     flex-direction: column;

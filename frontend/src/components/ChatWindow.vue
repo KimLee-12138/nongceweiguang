@@ -114,7 +114,7 @@ async function loadPolicies() {
     }
   }
   if (!policies.value.length) {
-    policies.value = await api.get('/policies')
+    policies.value = await api.withUser(() => api.get('/policies'))
     policySource.value = 'all'
   }
   lastPolicyCount.value = policies.value.length
@@ -128,7 +128,7 @@ async function loadPolicies() {
 
 async function pollPolicyCount() {
   try {
-    const result = await api.get('/policies/count')
+    const result = await api.withUser(() => api.get('/policies/count'))
     const serverCount = result?.count ?? -1
     if (lastPolicyCount.value >= 0 && serverCount !== lastPolicyCount.value) {
       await loadPolicies()
@@ -380,6 +380,7 @@ async function send() {
       const text = await response.text()
       streaming.value = false
       messages.value.pop()
+      input.value = messageText
       throw new Error(text)
     }
 
@@ -473,6 +474,9 @@ async function send() {
     const lastMessage = messages.value[messages.value.length - 1]
     if (lastMessage?.role === 'assistant' && !lastMessage.content) {
       messages.value.pop()
+    }
+    if (!input.value) {
+      input.value = messageText
     }
   } finally {
     streaming.value = false

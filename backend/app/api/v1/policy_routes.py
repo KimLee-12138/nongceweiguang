@@ -16,11 +16,18 @@ from app.api.v1.schemas_policies import (
 from app.db.session import get_db
 from app.models.admin_models import AdminOperationRunItemORM, AdminOperationRunORM
 from app.models.auth_models import AdminUserORM, EndUserORM
-from app.models.business_models import MatchRecordORM, PolicyORM, UserProfileORM
+from app.models.business_models import HubeiPolicyRawORM, MatchRecordORM, PolicyORM, UserProfileORM
 from app.models.policy_review_models import PolicyReviewTaskORM
 from app.services.admin_operation_service import consume_run_by_id_in_background, create_run
 from app.services.condition_tree_service import extract_condition_tree_metadata, normalize_condition_tree
 from app.services.crawler_service import (
+    CrawlerError,
+    CrawlerSource,
+    _extract_title_candidates,
+    _fetch_html,
+    _is_likely_org_name,
+    _page_text,
+    _pick_best_title,
     create_auto_crawler_run_record,
     get_auto_crawler_config as get_auto_crawler_config_value,
     list_crawler_sources,
@@ -112,39 +119,81 @@ def delete_policy(policy_id: int, db: Session = Depends(get_db), admin: AdminUse
 
 
 @router.post('/fix-titles')
-def fix_suspicious_titles(db: Session = Depends(get_db), admin: AdminUserORM = Depends(get_current_admin)):
-    """Scan policies with org-like titles and attempt to fix them from review task data."""
+def fix_suspicious_titles(
+    db: Session = Depends(get_db),
+    admin: AdminUserORM = Depends(get_current_admin),
+    dry_run: bool = False,
+    recrawl: bool = True,
+):
+    """Scan policies / raw records with org-like titles and fix them.
+
+    When *recrawl* is True (default), re-fetches the original page and extracts
+    the title with the improved logic.  Falls back to review-task data when the
+    page is unreachable.
+    """
     _ = admin
-    org_suffixes = ('厅', '局', '委', '部', '办', '院', '中心', '会', '所', '站', '处', '司', '署')
-    policy_keywords = ('关于', '通知', '意见', '办法', '规定', '方案', '条例', '公告', '公示', '通报')
+
+    fixed: list[dict] = []
+    errors: list[dict] = []
+
     all_policies = db.scalars(select(PolicyORM).order_by(desc(PolicyORM.id)).limit(500)).all()
-    fixed = []
     for policy in all_policies:
         title = (policy.title or '').strip()
-        if not title or len(title) > 20:
+        if not _is_likely_org_name(title):
             continue
-        is_suspicious = title.endswith(org_suffixes) and not any(kw in title for kw in policy_keywords)
-        if not is_suspicious:
+
+        new_title = _try_recrawl_title(policy.raw_text_ref, recrawl)
+
+        if not new_title or _is_likely_org_name(new_title):
+            task = db.scalar(
+                select(PolicyReviewTaskORM).where(PolicyReviewTaskORM.approved_policy_id == policy.id)
+            )
+            if task:
+                for candidate in (task.draft_title, task.title):
+                    candidate = (candidate or '').strip()
+                    if candidate and not _is_likely_org_name(candidate):
+                        new_title = candidate
+                        break
+
+        if not new_title or _is_likely_org_name(new_title) or new_title == title:
             continue
-        task = db.scalar(
-            select(PolicyReviewTaskORM).where(PolicyReviewTaskORM.approved_policy_id == policy.id)
-        )
-        if not task:
+
+        if not dry_run:
+            policy.title = new_title
+        fixed.append({'id': policy.id, 'table': 'policies', 'old_title': title, 'new_title': new_title})
+
+    raw_records = db.scalars(select(HubeiPolicyRawORM).order_by(desc(HubeiPolicyRawORM.id)).limit(500)).all()
+    for raw in raw_records:
+        title = (raw.title or '').strip()
+        if not _is_likely_org_name(title):
             continue
-        candidate = (task.draft_title or '').strip()
-        if candidate and candidate != title and not (candidate.endswith(org_suffixes) and len(candidate) <= 20):
-            old_title = policy.title
-            policy.title = candidate
-            fixed.append({'id': policy.id, 'old_title': old_title, 'new_title': candidate})
+
+        new_title = _try_recrawl_title(raw.page_url, recrawl)
+
+        if not new_title or _is_likely_org_name(new_title):
             continue
-        original_title = (task.title or '').strip()
-        if original_title and original_title != title and not (original_title.endswith(org_suffixes) and len(original_title) <= 20):
-            old_title = policy.title
-            policy.title = original_title
-            fixed.append({'id': policy.id, 'old_title': old_title, 'new_title': original_title})
-    if fixed:
+
+        if not dry_run:
+            raw.title = new_title
+        fixed.append({'id': raw.id, 'table': 'hubei_policies_raw', 'old_title': title, 'new_title': new_title})
+
+    if fixed and not dry_run:
         db.commit()
-    return {'fixed_count': len(fixed), 'fixed': fixed}
+
+    return {'fixed_count': len(fixed), 'dry_run': dry_run, 'fixed': fixed, 'errors': errors}
+
+
+def _try_recrawl_title(url: str | None, enabled: bool) -> str | None:
+    """Re-fetch a page URL and extract the best title candidate."""
+    if not enabled or not url or not url.startswith('http'):
+        return None
+    try:
+        page_html = _fetch_html(url)
+        body_text = _page_text(page_html)
+        candidates = _extract_title_candidates(page_html, body_text)
+        return _pick_best_title(candidates) or None
+    except (CrawlerError, Exception):
+        return None
 
 
 @router.post('/compile-text', response_model=CompileTextResponse)
@@ -210,7 +259,8 @@ def refresh_policy_condition_tree(
 
 
 @router.get('/crawl/sources')
-def crawl_sources():
+def crawl_sources(admin: AdminUserORM = Depends(get_current_admin)):
+    _ = admin
     sources = [
         {'id': item.id, 'name': item.name, 'url': item.url, 'file_type': item.file_type}
         for item in list_crawler_sources()
@@ -369,6 +419,9 @@ def parse_file_job(payload: dict, db: Session = Depends(get_db), admin: AdminUse
     data_b64 = payload.get('data_b64')
     if not data_b64:
         raise HTTPException(status_code=400, detail='Missing data_b64')
+    MAX_B64_SIZE = 4 * 1024 * 1024
+    if len(data_b64) > MAX_B64_SIZE:
+        raise HTTPException(status_code=413, detail='data_b64 过大，上限约 3MB 原始文件')
     run = create_run(
         db,
         operation_type='policy_file_parse',
@@ -379,7 +432,8 @@ def parse_file_job(payload: dict, db: Session = Depends(get_db), admin: AdminUse
 
 
 @router.post('/evaluate', response_model=MatchEvaluateResponse)
-def match_evaluate(payload: MatchEvaluateRequest):
+def match_evaluate(payload: MatchEvaluateRequest, user: EndUserORM = Depends(get_current_user)):
+    _ = user
     return MatchEvaluateResponse(summary=to_match_summary(payload.condition_tree or {}, payload.profile or {}))
 
 

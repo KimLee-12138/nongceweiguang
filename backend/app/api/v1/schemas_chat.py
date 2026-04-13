@@ -17,7 +17,7 @@ class ConversationDetailOut(BaseModel):
 
 class ChatStreamRequest(BaseModel):
     conversation_id: int | None = None
-    message: str
+    message: str = Field(min_length=1, max_length=8000)
     mode: str = "interpret"  # match | agri_llm | interpret
     profile_id: int | None = None
     policy_id: int | None = None
